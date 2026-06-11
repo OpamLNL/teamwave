@@ -7,6 +7,7 @@ import {
     finishTypingRace,
     sendTypedChar,
 } from '../utils/events';
+import { canManageEvent } from '../utils/permissions';
 import { isTypingRaceActivity } from '../utils/typingRace';
 import TypingRaceLive from '../components/typing/TypingRaceLive';
 import TeamLeaderboard from '../components/typing/TeamLeaderboard';
@@ -15,7 +16,7 @@ import StatusBadge from '../components/events/StatusBadge';
 export default function TypingRacePlayPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, role } = useAuth();
 
     const [event, setEvent] = useState(null);
     const [state, setState] = useState(null);
@@ -106,11 +107,7 @@ export default function TypingRacePlayPage() {
         }
     };
 
-    const isHost = user && event && (
-        Number(user.id) === Number(event.organizer_id)
-        || Number(user.id) === Number(event.host_id)
-        || user.role === 'admin'
-    );
+    const isHost = canManageEvent(user, role, event);
 
     if (loading) return <p className="text-muted">Завантаження гри…</p>;
 

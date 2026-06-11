@@ -122,8 +122,10 @@ export const AuthProvider = ({ children }) => {
 
             tokenUnsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
                 if (firebaseUser) {
-                    const token = await firebaseUser.getIdToken();
+                    const token = await firebaseUser.getIdToken(false);
                     localStorage.setItem('token', token);
+                } else {
+                    localStorage.removeItem('token');
                 }
             });
 
@@ -142,7 +144,7 @@ export const AuthProvider = ({ children }) => {
                 const savedRole = localStorage.getItem('role');
 
                 try {
-                    const token = await firebaseUser.getIdToken();
+                    const token = await firebaseUser.getIdToken(true);
                     localStorage.setItem('token', token);
                     await syncDbUser(firebaseUser, token);
                 } catch (error) {

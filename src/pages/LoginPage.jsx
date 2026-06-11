@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from || '/';
+    const [searchParams] = useSearchParams();
+    const redirectParam = searchParams.get('redirect');
+    const from = redirectParam || location.state?.from || '/';
     const { user, login, loading } = useAuth();
 
     const [loginError, setLoginError] = useState('');

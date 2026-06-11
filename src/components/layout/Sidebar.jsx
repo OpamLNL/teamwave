@@ -1,6 +1,7 @@
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { mainNav, personalNav, secondaryNav } from '../../config/navigation';
+import { canCreateEvents } from '../../utils/permissions';
 import UserAvatar from '../UserAvatar/UserAvatar';
 
 function NavItem({ to, label, icon, end, onNavigate }) {
@@ -42,6 +43,7 @@ function NavSection({ title, children }) {
 export default function Sidebar({ mobileOpen, onClose }) {
     const { user, role, logout } = useAuth();
     const isStaff = role === 'admin' || role === 'organizer';
+    const canCreateEventsFlag = canCreateEvents(user, role);
 
     const sidebarContent = (
         <div className="flex h-full flex-col">
@@ -63,6 +65,12 @@ export default function Sidebar({ mobileOpen, onClose }) {
                         <NavItem key={item.to} {...item} onNavigate={onClose} />
                     ))}
                 </NavSection>
+
+                {canCreateEventsFlag && (
+                    <NavSection title="Організація">
+                        <NavItem to="/events/create" label="Створити захід" icon="＋" onNavigate={onClose} />
+                    </NavSection>
+                )}
 
                 {user && (
                     <NavSection title="Особисте">

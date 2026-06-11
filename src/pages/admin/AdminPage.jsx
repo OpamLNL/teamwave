@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { canCreateEvents, resolveUserRole } from '../../utils/permissions';
 import AdminGuard from '../../components/admin/AdminGuard';
 import AdminDashboard from '../../components/admin/sections/AdminDashboard';
 import AdminUsers from '../../components/admin/sections/AdminUsers';
@@ -14,8 +16,8 @@ const SECTIONS = [
 ];
 
 function AdminContent() {
-    const { role } = useAuth();
-    const userRole = (role || 'participant').toLowerCase();
+    const { user, role } = useAuth();
+    const userRole = resolveUserRole(user, role);
     const available = SECTIONS.filter((s) => s.roles.includes(userRole));
     const [section, setSection] = useState(available[0]?.id || 'dashboard');
 
@@ -36,11 +38,21 @@ function AdminContent() {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <header className="mb-8">
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                    {userRole === 'admin' ? 'Адмінпанель' : 'Керування заходами'}
-                </h1>
-                <p className="text-sm text-muted mt-1">TeamWave — заходи, користувачі, модерація</p>
+            <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                        {userRole === 'admin' ? 'Адмінпанель' : 'Керування заходами'}
+                    </h1>
+                    <p className="text-sm text-muted mt-1">TeamWave — заходи, користувачі, модерація</p>
+                </div>
+                {canCreateEvents(user, role) && (
+                    <Link
+                        to="/events/create"
+                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                    >
+                        ＋ Створити захід
+                    </Link>
+                )}
             </header>
 
             <div className="flex flex-col lg:flex-row gap-6">

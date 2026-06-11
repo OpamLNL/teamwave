@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { canCreateEvents } from '../utils/permissions';
 import { fetchEvents, mapEventForCard } from '../utils/events';
 import EventCard from '../components/events/EventCard';
 
@@ -27,7 +28,7 @@ export default function EventsPage() {
                     <h2 className="text-2xl font-extrabold tracking-tight">📅 Календар заходів</h2>
                     <p className="mt-1 text-sm text-muted">Минулі, поточні та майбутні тімбілдинги.</p>
                 </div>
-                {user && ['admin', 'organizer', 'host'].includes(role) && (
+                {canCreateEvents(user, role) && (
                     <Link
                         to="/events/create"
                         className="inline-flex rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"

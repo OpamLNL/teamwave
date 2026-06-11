@@ -26,11 +26,11 @@ export default function App() {
             <Route element={<AppLayout />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/events" element={<EventsPage />} />
-                <Route path="/events/:id" element={<EventDetailPage />} />
-                <Route path="/events/:id/lobby" element={<EventLobbyPage />} />
-                <Route path="/events/:id/play" element={<TypingRacePlayPage />} />
                 <Route path="/events/create" element={<CreateEventPage />} />
                 <Route path="/events/create/typing" element={<CreateEventPage />} />
+                <Route path="/events/:id/lobby" element={<EventLobbyPage />} />
+                <Route path="/events/:id/play" element={<TypingRacePlayPage />} />
+                <Route path="/events/:id" element={<EventDetailPage />} />
                 <Route path="/templates" element={<TemplatesPage />} />
                 <Route path="/join" element={<JoinEventPage />} />
                 <Route path="/about" element={<About />} />

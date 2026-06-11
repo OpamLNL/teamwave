@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { canCreateEvents } from '../utils/permissions';
 import { fetchEvents, mapEventForCard } from '../utils/events';
+import { resolveEventIcon } from '../utils/eventIcons';
 import { activityTypes } from '../data/eventConstants';
 import EventCard from '../components/events/EventCard';
 
 export default function Home() {
-    const { user } = useAuth();
+    const { user, role } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -22,6 +24,8 @@ export default function Home() {
     const nextEvent = upcoming[0];
     const plannedCount = events.filter((e) => e.status === 'planned').length;
     const finishedCount = events.filter((e) => e.status === 'finished').length;
+
+    const canCreate = canCreateEvents(user, role);
 
     return (
         <div className="space-y-8">
@@ -48,13 +52,21 @@ export default function Home() {
                             <Link to="/events" className="rounded-2xl border border-border bg-bg px-5 py-3 text-sm font-semibold transition hover:bg-surface">
                                 Переглянути заходи
                             </Link>
+                            {canCreate && (
+                                <Link to="/events/create" className="rounded-2xl border border-primary/30 bg-primary/10 px-5 py-3 text-sm font-semibold text-primary transition hover:bg-primary/15">
+                                    ＋ Створити захід
+                                </Link>
+                            )}
                         </div>
                     </div>
 
                     {nextEvent && (
                         <div className="rounded-2xl border border-border/80 bg-bg/80 p-5 backdrop-blur">
                             <p className="text-xs font-semibold uppercase tracking-wider text-muted">Наступний захід</p>
-                            <p className="mt-2 text-lg font-bold">{nextEvent.title}</p>
+                            <p className="mt-2 flex items-center gap-2 text-lg font-bold">
+                                <span className="text-2xl">{resolveEventIcon(nextEvent)}</span>
+                                {nextEvent.title}
+                            </p>
                             <p className="mt-1 text-sm text-muted">Код: <span className="font-mono font-bold text-text">{nextEvent.join_code}</span></p>
                             <Link to={`/events/${nextEvent.id}`} className="mt-4 inline-flex text-sm font-semibold text-primary hover:opacity-80">
                                 Детальніше →

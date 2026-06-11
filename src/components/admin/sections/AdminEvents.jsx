@@ -44,7 +44,15 @@ export default function AdminEvents() {
 
     return (
         <div className="space-y-4">
-            <h2 className="text-xl font-bold">Заходи</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-xl font-bold">Заходи</h2>
+                <Link
+                    to="/events/create"
+                    className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                >
+                    ＋ Створити захід
+                </Link>
+            </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>

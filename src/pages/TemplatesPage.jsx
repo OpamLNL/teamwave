@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchTemplateById, fetchTemplates } from '../utils/events';
 import { resolveEventIcon } from '../utils/eventIcons';
+import { canCreateEvents, getCreateEventPath } from '../utils/permissions';
 import { resolveMediaUrl } from '../utils/mediaUrl';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
 import { isTeamRelaySettings, isTypingRaceActivity } from '../utils/typingRace';
@@ -27,10 +28,12 @@ function TemplateCard({ template }) {
     const [expanded, setExpanded] = useState(false);
     const [details, setDetails] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
-    const isTypingTemplate = TYPING_TEMPLATE_IDS.has(template.id);
+    const isTypingTemplate = TYPING_TEMPLATE_IDS.has(template.id)
+        || template.event_type === 'game' && /typing/i.test(template.name);
     const icon = resolveEventIcon(template);
     const coverUrl = resolveMediaUrl(template.cover_url);
-    const canCreate = user && ['admin', 'organizer', 'host'].includes(role);
+    const createPath = getCreateEventPath(template.id, user);
+    const hasCreateRights = canCreateEvents(user, role);
 
     const loadDetails = async () => {
         if (details || loadingDetails) return;
@@ -85,25 +88,29 @@ function TemplateCard({ template }) {
                     </span>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                    <Link
+                        to={createPath}
+                        className="inline-flex flex-1 items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:flex-none"
+                    >
+                        Створити захід
+                    </Link>
                     {isTypingTemplate && (
                         <button
                             type="button"
                             onClick={handleToggle}
-                            className="text-sm font-semibold text-primary hover:opacity-80"
+                            className="inline-flex flex-1 items-center justify-center rounded-xl border border-border bg-bg px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary/40 sm:flex-none"
                         >
                             {expanded ? 'Сховати формат' : 'Переглянути формат'}
                         </button>
                     )}
-                    {canCreate && (
-                        <Link
-                            to={`/events/create?template=${template.id}`}
-                            className="text-sm font-semibold text-accent hover:opacity-80"
-                        >
-                            Створити захід →
-                        </Link>
-                    )}
                 </div>
+
+                {user && !hasCreateRights && (
+                    <p className="mt-2 text-xs text-muted">
+                        Потрібна роль admin, organizer або host. Зверніться до адміністратора.
+                    </p>
+                )}
 
                 {expanded && isTypingTemplate && (
                     <div className="mt-4 border-t border-border pt-4">
@@ -134,24 +141,26 @@ export default function TemplatesPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    const typingTemplates = templates.filter((t) => TYPING_TEMPLATE_IDS.has(t.id));
-    const otherTemplates = templates.filter((t) => !TYPING_TEMPLATE_IDS.has(t.id));
+    const typingTemplates = templates.filter(
+        (t) => TYPING_TEMPLATE_IDS.has(t.id) || /typing/i.test(t.name)
+    );
+    const otherTemplates = templates.filter(
+        (t) => !TYPING_TEMPLATE_IDS.has(t.id) && !/typing/i.test(t.name)
+    );
 
     return (
         <div className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-extrabold tracking-tight">📚 Бібліотека шаблонів</h2>
-                    <p className="mt-1 text-sm text-muted">Готові сценарії — оберіть шаблон і створіть захід одним кліком.</p>
+                    <p className="mt-1 text-sm text-muted">Оберіть шаблон і натисніть «Створити захід».</p>
                 </div>
-                {user && ['admin', 'organizer', 'host'].includes(role) && (
-                    <Link
-                        to="/events/create"
-                        className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
-                    >
-                        + Новий захід
-                    </Link>
-                )}
+                <Link
+                    to={getCreateEventPath(null, user)}
+                    className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+                >
+                    + Новий захід
+                </Link>
             </div>
 
             {loading && <p className="text-muted">Завантаження…</p>}

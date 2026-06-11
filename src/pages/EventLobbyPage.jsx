@@ -15,6 +15,7 @@ import {
     startTypingRace,
     updateEvent,
 } from '../utils/events';
+import { canManageEvent } from '../utils/permissions';
 import { isTeamRelaySettings, isTypingRaceActivity } from '../utils/typingRace';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
 import TeamLeaderboard from '../components/typing/TeamLeaderboard';
@@ -24,7 +25,7 @@ import StatusBadge from '../components/events/StatusBadge';
 export default function EventLobbyPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, role } = useAuth();
 
     const [event, setEvent] = useState(null);
     const [teams, setTeams] = useState([]);
@@ -39,11 +40,7 @@ export default function EventLobbyPage() {
         [event]
     );
     const teamSize = typingActivity?.settings?.team_size ?? 4;
-    const isHost = user && event && (
-        Number(user.id) === Number(event.organizer_id)
-        || Number(user.id) === Number(event.host_id)
-        || user.role === 'admin'
-    );
+    const isHost = canManageEvent(user, role, event);
     const myTeam = teams.find((t) => t.members?.some((m) => Number(m.user_id) === Number(user?.id)));
     const isFinished = event?.status === 'finished';
 

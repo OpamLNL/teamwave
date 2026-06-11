@@ -9,6 +9,7 @@ import {
     uploadEventCover,
 } from '../utils/events';
 import { ICON_OPTIONS, resolveEventIcon, shouldOpenLobby } from '../utils/eventIcons';
+import { canCreateEvents } from '../utils/permissions';
 import { resolveMediaUrl } from '../utils/mediaUrl';
 
 const EVENT_TYPES = [
@@ -53,7 +54,7 @@ export default function CreateEventPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const canCreate = user && ['admin', 'organizer', 'host'].includes(role);
+    const canCreate = canCreateEvents(user, role);
 
     useEffect(() => {
         fetchTemplates()
@@ -155,7 +156,7 @@ export default function CreateEventPage() {
         return (
             <div className="mx-auto max-w-lg rounded-2xl border border-border bg-surface p-8 text-center">
                 <h2 className="text-xl font-bold">Недостатньо прав</h2>
-                <p className="mt-3 text-sm text-muted">Створювати заходи можуть лише організатори та ведучі.</p>
+                <p className="mt-3 text-sm text-muted">Створювати заходи можуть адміністратори, організатори та ведучі.</p>
             </div>
         );
     }

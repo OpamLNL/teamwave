@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { resolveUserRole } from '../../utils/permissions';
 
 export default function AdminGuard({ children, adminOnly = false }) {
     const { user, role, loading } = useAuth();
@@ -12,8 +13,9 @@ export default function AdminGuard({ children, adminOnly = false }) {
         return <Navigate to="/login" replace state={{ from: '/admin' }} />;
     }
 
-    const isAdmin = role === 'admin';
-    const isOrganizer = role === 'organizer';
+    const userRole = resolveUserRole(user, role);
+    const isAdmin = userRole === 'admin';
+    const isOrganizer = userRole === 'organizer';
 
     if (adminOnly && !isAdmin) {
         return <Navigate to="/" replace />;

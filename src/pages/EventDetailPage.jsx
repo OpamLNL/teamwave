@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchEventById, fetchEventTeamLeaderboard, joinEventById } from '../utils/events';
 import { resolveEventIcon } from '../utils/eventIcons';
+import { canManageEvent } from '../utils/permissions';
 import EventCoverEditor from '../components/events/EventCoverEditor';
+import EventIconPicker from '../components/events/EventIconPicker';
 import AuthorLink from '../components/AuthorLink/AuthorLink';
 import StatusBadge from '../components/events/StatusBadge';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
@@ -44,7 +46,7 @@ function ParticipantRow({ participant }) {
 
 export default function EventDetailPage() {
     const { id } = useParams();
-    const { user } = useAuth();
+    const { user, role } = useAuth();
     const [event, setEvent] = useState(null);
     const [teamLeaderboard, setTeamLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -87,11 +89,7 @@ export default function EventDetailPage() {
     const participants = Array.isArray(event.participants) ? event.participants : [];
     const typingActivity = event.activities?.find(isTypingRaceActivity);
     const isTypingEvent = Boolean(typingActivity && isTeamRelaySettings(typingActivity.settings));
-    const isHost = user && (
-        Number(user.id) === Number(event.organizer_id)
-        || Number(user.id) === Number(event.host_id)
-        || user.role === 'admin'
-    );
+    const isHost = canManageEvent(user, role, event);
     const isParticipant = user && participants.some((p) => Number(p.user_id) === Number(user.id));
 
     const handleJoinEvent = async () => {
@@ -110,6 +108,11 @@ export default function EventDetailPage() {
 
             <section className="rounded-[1.75rem] border border-border bg-surface p-6 sm:p-8">
                 <EventCoverEditor
+                    event={event}
+                    canEdit={isHost}
+                    onUpdated={(updated) => setEvent((prev) => ({ ...prev, ...updated }))}
+                />
+                <EventIconPicker
                     event={event}
                     canEdit={isHost}
                     onUpdated={(updated) => setEvent((prev) => ({ ...prev, ...updated }))}

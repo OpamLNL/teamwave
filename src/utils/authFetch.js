@@ -1,8 +1,17 @@
-// utils/authFetch.js
-import { auth } from "../firebase";
+import { auth } from '../firebase';
+
+async function getAuthToken(forceRefresh = false) {
+    const user = auth?.currentUser;
+    if (!user) {
+        return localStorage.getItem('token');
+    }
+
+    const token = await user.getIdToken(forceRefresh);
+    localStorage.setItem('token', token);
+    return token;
+}
 
 export async function authFetch(url, options = {}) {
-    let token = localStorage.getItem('token');
     const headers = {
         ...(options.headers || {}),
     };
@@ -11,30 +20,28 @@ export async function authFetch(url, options = {}) {
         headers['Content-Type'] = 'application/json';
     }
 
+    let token = await getAuthToken(false);
     if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
+    let response = await fetch(url, {
         ...options,
-        headers
+        headers,
     });
 
-    // Якщо токен недійсний — пробуємо оновити
-    if (response.status === 401) {
+    if (response.status === 401 && auth?.currentUser) {
         try {
-            const user = auth?.currentUser;
-            if (user) {
-                const newToken = await user.getIdToken(true);
-                localStorage.setItem('token', newToken);
-                headers['Authorization'] = `Bearer ${newToken}`;
-                return fetch(url, {
+            token = await getAuthToken(true);
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+                response = await fetch(url, {
                     ...options,
-                    headers
+                    headers,
                 });
             }
         } catch (err) {
-            console.error("Помилка оновлення токена:", err);
+            console.error('Помилка оновлення токена:', err);
         }
     }
 
