@@ -75,6 +75,24 @@ export async function createEventFromTemplate(templateId, body) {
     return parseAuthJson(res);
 }
 
+export async function createEvent(body) {
+    const res = await authFetch(endpoints.events.create, {
+        method: 'POST',
+        body: JSON.stringify(body),
+    });
+    return parseAuthJson(res);
+}
+
+export async function uploadEventCover(eventId, file) {
+    const formData = new FormData();
+    formData.append('cover', file);
+    const res = await authFetch(endpoints.events.cover(eventId), {
+        method: 'POST',
+        body: formData,
+    });
+    return parseAuthJson(res);
+}
+
 export async function joinEventById(eventId) {
     const res = await authFetch(endpoints.events.join(eventId), {
         method: 'POST',

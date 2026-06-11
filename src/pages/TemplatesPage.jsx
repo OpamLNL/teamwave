@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchTemplateById, fetchTemplates } from '../utils/events';
+import { resolveEventIcon } from '../utils/eventIcons';
+import { resolveMediaUrl } from '../utils/mediaUrl';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
 import { isTeamRelaySettings, isTypingRaceActivity } from '../utils/typingRace';
 
@@ -15,6 +17,9 @@ const categoryColors = {
     wellness: 'from-emerald-500/20 to-teal-500/10',
     game: 'from-pink-500/20 to-rose-500/10',
     hybrid: 'from-indigo-500/20 to-blue-500/10',
+    collaborative: 'from-blue-500/20 to-cyan-500/10',
+    creative: 'from-fuchsia-500/20 to-pink-500/10',
+    themed: 'from-amber-500/20 to-orange-500/10',
 };
 
 function TemplateCard({ template }) {
@@ -23,6 +28,9 @@ function TemplateCard({ template }) {
     const [details, setDetails] = useState(null);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const isTypingTemplate = TYPING_TEMPLATE_IDS.has(template.id);
+    const icon = resolveEventIcon(template);
+    const coverUrl = resolveMediaUrl(template.cover_url);
+    const canCreate = user && ['admin', 'organizer', 'host'].includes(role);
 
     const loadDetails = async () => {
         if (details || loadingDetails) return;
@@ -47,43 +55,55 @@ function TemplateCard({ template }) {
 
     return (
         <article className="overflow-hidden rounded-2xl border border-border bg-surface">
-            <div className={`bg-gradient-to-br ${categoryColors[template.category] || categoryColors.combined} px-5 py-4`}>
+            {coverUrl ? (
+                <div className="relative h-32">
+                    <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+                    <span className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-xl bg-surface/90 text-xl shadow backdrop-blur">
+                        {icon}
+                    </span>
+                </div>
+            ) : (
+                <div className={`relative bg-gradient-to-br ${categoryColors[template.category] || categoryColors.combined} px-5 py-5`}>
+                    <span className="text-4xl">{icon}</span>
+                </div>
+            )}
+
+            <div className="p-5">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted">{template.category}</p>
                 <h3 className="mt-2 text-xl font-extrabold tracking-tight">{template.name}</h3>
                 {isTypingTemplate && (
-                    <span className="mt-2 inline-block rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-primary">
+                    <span className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                         ⌨ Typing race
                     </span>
                 )}
-            </div>
-            <div className="p-5">
-                <p className="text-sm text-muted">{template.description}</p>
+
+                <p className="mt-3 text-sm text-muted">{template.description}</p>
                 <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold text-muted">
                     <span className="rounded-full bg-bg px-3 py-1">Тип: {template.event_type}</span>
                     <span className="rounded-full bg-bg px-3 py-1">
-                        🎯 {template.activities_count} активност{template.activities_count === 1 ? 'ь' : 'і'}
+                        {icon} {template.activities_count} активност{template.activities_count === 1 ? 'ь' : 'і'}
                     </span>
                 </div>
 
-                {isTypingTemplate && (
-                    <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-4 flex flex-wrap gap-3">
+                    {isTypingTemplate && (
                         <button
                             type="button"
                             onClick={handleToggle}
                             className="text-sm font-semibold text-primary hover:opacity-80"
                         >
-                            {expanded ? 'Сховати формат' : 'Переглянути формат тексту'}
+                            {expanded ? 'Сховати формат' : 'Переглянути формат'}
                         </button>
-                        {user && ['admin', 'organizer', 'host'].includes(role) && (
-                            <Link
-                                to={`/events/create/typing?template=${template.id}`}
-                                className="text-sm font-semibold text-accent hover:opacity-80"
-                            >
-                                Створити захід →
-                            </Link>
-                        )}
-                    </div>
-                )}
+                    )}
+                    {canCreate && (
+                        <Link
+                            to={`/events/create?template=${template.id}`}
+                            className="text-sm font-semibold text-accent hover:opacity-80"
+                        >
+                            Створити захід →
+                        </Link>
+                    )}
+                </div>
 
                 {expanded && isTypingTemplate && (
                     <div className="mt-4 border-t border-border pt-4">
@@ -121,15 +141,15 @@ export default function TemplatesPage() {
         <div className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-extrabold tracking-tight">Бібліотека шаблонів</h2>
-                    <p className="mt-1 text-sm text-muted">Готові сценарії з бази даних TeamWave.</p>
+                    <h2 className="text-2xl font-extrabold tracking-tight">📚 Бібліотека шаблонів</h2>
+                    <p className="mt-1 text-sm text-muted">Готові сценарії — оберіть шаблон і створіть захід одним кліком.</p>
                 </div>
                 {user && ['admin', 'organizer', 'host'].includes(role) && (
                     <Link
-                        to="/events/create/typing"
+                        to="/events/create"
                         className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
                     >
-                        + Typing race
+                        + Новий захід
                     </Link>
                 )}
             </div>
@@ -141,7 +161,7 @@ export default function TemplatesPage() {
                 <section className="space-y-4">
                     <div>
                         <h3 className="text-lg font-bold">⌨ Typing race</h3>
-                        <p className="text-sm text-muted">Командний relay: кожен гравець друкує слова свого кольору, перемагає найшвидша команда.</p>
+                        <p className="text-sm text-muted">Командний relay: кожен гравець друкує слова свого кольору.</p>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                         {typingTemplates.map((template) => (

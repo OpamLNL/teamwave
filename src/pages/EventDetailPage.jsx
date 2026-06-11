@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchEventById, fetchEventTeamLeaderboard, joinEventById } from '../utils/events';
+import { resolveEventIcon } from '../utils/eventIcons';
+import EventCoverEditor from '../components/events/EventCoverEditor';
 import AuthorLink from '../components/AuthorLink/AuthorLink';
 import StatusBadge from '../components/events/StatusBadge';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
@@ -107,10 +109,19 @@ export default function EventDetailPage() {
             <Link to="/events" className="inline-flex text-sm font-semibold text-primary hover:opacity-80">← Назад до заходів</Link>
 
             <section className="rounded-[1.75rem] border border-border bg-surface p-6 sm:p-8">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+                <EventCoverEditor
+                    event={event}
+                    canEdit={isHost}
+                    onUpdated={(updated) => setEvent((prev) => ({ ...prev, ...updated }))}
+                />
+
+                <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <StatusBadge status={event.status} />
-                        <h2 className="mt-3 text-3xl font-extrabold tracking-tight">{event.title}</h2>
+                        <h2 className="mt-3 text-3xl font-extrabold tracking-tight flex items-center gap-3">
+                            <span className="text-3xl">{resolveEventIcon(event)}</span>
+                            {event.title}
+                        </h2>
                         <p className="mt-3 max-w-2xl text-muted">{event.description}</p>
                     </div>
                     <div className="rounded-2xl bg-bg px-5 py-4 text-center">
@@ -146,10 +157,10 @@ export default function EventDetailPage() {
                         )}
                         {isHost && event.status !== 'finished' && (
                             <Link
-                                to="/events/create/typing"
+                                to="/events/create"
                                 className="rounded-2xl bg-bg px-5 py-2.5 text-sm font-semibold text-muted hover:text-primary"
                             >
-                                + Новий typing race
+                                + Новий захід
                             </Link>
                         )}
                     </div>

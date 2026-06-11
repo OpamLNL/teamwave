@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { fetchEvents, mapEventForCard } from '../utils/events';
 import EventCard from '../components/events/EventCard';
 
 export default function EventsPage() {
+    const { user, role } = useAuth();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -22,9 +24,17 @@ export default function EventsPage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h2 className="text-2xl font-extrabold tracking-tight">Календар заходів</h2>
+                    <h2 className="text-2xl font-extrabold tracking-tight">📅 Календар заходів</h2>
                     <p className="mt-1 text-sm text-muted">Минулі, поточні та майбутні тімбілдинги.</p>
                 </div>
+                {user && ['admin', 'organizer', 'host'].includes(role) && (
+                    <Link
+                        to="/events/create"
+                        className="inline-flex rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+                    >
+                        + Створити захід
+                    </Link>
+                )}
             </div>
 
             <div className="flex flex-wrap gap-2">

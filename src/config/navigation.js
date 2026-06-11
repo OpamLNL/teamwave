@@ -19,6 +19,7 @@ export const secondaryNav = [
 export const pageTitles = {
     '/': 'Головна',
     '/events': 'Заходи',
+    '/events/create': 'Новий захід',
     '/templates': 'Шаблони',
     '/join': 'Приєднатися',
     '/cabinet': 'Мій профіль',

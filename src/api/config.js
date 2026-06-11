@@ -63,6 +63,7 @@ export const endpoints = {
         list: `${API_BASE_URL}/events`,
         my: `${API_BASE_URL}/events/me`,
         create: `${API_BASE_URL}/events`,
+        cover: (id) => `${API_BASE_URL}/events/${id}/cover`,
         byId: (id) => `${API_BASE_URL}/events/${id}`,
         byCode: (code) => `${API_BASE_URL}/events/code/${code}`,
         update: (id) => `${API_BASE_URL}/events/${id}`,
