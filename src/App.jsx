@@ -14,6 +14,9 @@ import UserCabinetPage from './pages/UserCabinetPage';
 import UserProfilePage from './pages/UserProfilePage';
 import NotificationsPage from './pages/NotificationsPage';
 import AdminPage from './pages/admin/AdminPage';
+import CreateTypingEventPage from './pages/CreateTypingEventPage';
+import EventLobbyPage from './pages/EventLobbyPage';
+import TypingRacePlayPage from './pages/TypingRacePlayPage';
 
 export default function App() {
     return (
@@ -24,6 +27,9 @@ export default function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/events" element={<EventsPage />} />
                 <Route path="/events/:id" element={<EventDetailPage />} />
+                <Route path="/events/:id/lobby" element={<EventLobbyPage />} />
+                <Route path="/events/:id/play" element={<TypingRacePlayPage />} />
+                <Route path="/events/create/typing" element={<CreateTypingEventPage />} />
                 <Route path="/templates" element={<TemplatesPage />} />
                 <Route path="/join" element={<JoinEventPage />} />
                 <Route path="/about" element={<About />} />

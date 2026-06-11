@@ -1,5 +1,20 @@
 import { endpoints } from '../api/config';
 import { apiGet } from '../api/client';
+import { authFetch } from './authFetch';
+
+async function parseAuthJson(res) {
+    if (!res.ok) {
+        const text = await res.text();
+        try {
+            const json = JSON.parse(text);
+            throw new Error(json.error || text);
+        } catch (err) {
+            if (err instanceof Error && err.message) throw err;
+            throw new Error(text || `HTTP ${res.status}`);
+        }
+    }
+    return res.json();
+}
 
 export async function fetchEvents(params = {}) {
     const search = new URLSearchParams();
@@ -37,8 +52,8 @@ export async function fetchTemplates(params = {}) {
     return apiGet(url);
 }
 
-export async function fetchEventParticipants(eventId) {
-    return apiGet(endpoints.events.participants(eventId));
+export async function fetchEventTeamLeaderboard(eventId) {
+    return apiGet(endpoints.events.teamLeaderboard(eventId));
 }
 
 export async function fetchTemplateById(id) {
@@ -50,4 +65,92 @@ export function mapEventForCard(event) {
         ...event,
         participants: event.participants_count ?? event.participants ?? 0,
     };
+}
+
+export async function createEventFromTemplate(templateId, body) {
+    const res = await authFetch(endpoints.events.fromTemplate(templateId), {
+        method: 'POST',
+        body: JSON.stringify(body),
+    });
+    return parseAuthJson(res);
+}
+
+export async function joinEventById(eventId) {
+    const res = await authFetch(endpoints.events.join(eventId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function updateEvent(eventId, body) {
+    const res = await authFetch(endpoints.events.update(eventId), {
+        method: 'PUT',
+        body: JSON.stringify(body),
+    });
+    return parseAuthJson(res);
+}
+
+export async function fetchEventTeams(eventId) {
+    return apiGet(endpoints.events.teams(eventId));
+}
+
+export async function createEventTeam(eventId, name) {
+    const res = await authFetch(endpoints.events.teams(eventId), {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+    });
+    return parseAuthJson(res);
+}
+
+export async function joinEventTeamSlot(eventId, teamId, slotIndex) {
+    const res = await authFetch(endpoints.events.teamJoin(eventId, teamId), {
+        method: 'POST',
+        body: JSON.stringify({ slot_index: slotIndex }),
+    });
+    return parseAuthJson(res);
+}
+
+export async function leaveEventTeam(eventId, teamId) {
+    const res = await authFetch(endpoints.events.teamJoin(eventId, teamId), {
+        method: 'DELETE',
+    });
+    return parseAuthJson(res);
+}
+
+export async function markEventTeamReady(eventId, teamId) {
+    const res = await authFetch(endpoints.events.teamReady(eventId, teamId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function fetchTypingState(eventId, activityId) {
+    const res = await authFetch(endpoints.events.typingState(eventId, activityId));
+    return parseAuthJson(res);
+}
+
+export async function startTypingRace(eventId, activityId) {
+    const res = await authFetch(endpoints.events.typingStart(eventId, activityId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function sendTypedChar(eventId, activityId, eventTeamId, char) {
+    const res = await authFetch(endpoints.events.typingType(eventId, activityId), {
+        method: 'POST',
+        body: JSON.stringify({ event_team_id: eventTeamId, char }),
+    });
+    return parseAuthJson(res);
+}
+
+export async function finishTypingRace(eventId, activityId) {
+    const res = await authFetch(endpoints.events.typingFinish(eventId, activityId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
 }

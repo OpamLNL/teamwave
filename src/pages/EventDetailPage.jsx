@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { fetchEventById } from '../utils/events';
+import { useAuth } from '../context/AuthContext';
+import { fetchEventById, fetchEventTeamLeaderboard, joinEventById } from '../utils/events';
 import AuthorLink from '../components/AuthorLink/AuthorLink';
 import StatusBadge from '../components/events/StatusBadge';
+import TypingRacePreview from '../components/typing/TypingRacePreview';
+import TeamLeaderboard from '../components/typing/TeamLeaderboard';
+import { isTeamRelaySettings, isTypingRaceActivity } from '../utils/typingRace';
 
 const PARTICIPANT_ROLE_LABELS = {
     participant: 'Учасник',
@@ -38,13 +42,29 @@ function ParticipantRow({ participant }) {
 
 export default function EventDetailPage() {
     const { id } = useParams();
+    const { user } = useAuth();
     const [event, setEvent] = useState(null);
+    const [teamLeaderboard, setTeamLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
+        setLoading(true);
         fetchEventById(id, 'all')
-            .then(setEvent)
+            .then(async (data) => {
+                setEvent(data);
+                const typingActivity = data?.activities?.find(isTypingRaceActivity);
+                if (typingActivity && isTeamRelaySettings(typingActivity.settings)) {
+                    try {
+                        const teams = await fetchEventTeamLeaderboard(id);
+                        setTeamLeaderboard(Array.isArray(teams) ? teams : []);
+                    } catch {
+                        setTeamLeaderboard([]);
+                    }
+                } else {
+                    setTeamLeaderboard([]);
+                }
+            })
             .catch((err) => setError(err.message || 'Захід не знайдено'))
             .finally(() => setLoading(false));
     }, [id]);
@@ -63,6 +83,24 @@ export default function EventDetailPage() {
     }
 
     const participants = Array.isArray(event.participants) ? event.participants : [];
+    const typingActivity = event.activities?.find(isTypingRaceActivity);
+    const isTypingEvent = Boolean(typingActivity && isTeamRelaySettings(typingActivity.settings));
+    const isHost = user && (
+        Number(user.id) === Number(event.organizer_id)
+        || Number(user.id) === Number(event.host_id)
+        || user.role === 'admin'
+    );
+    const isParticipant = user && participants.some((p) => Number(p.user_id) === Number(user.id));
+
+    const handleJoinEvent = async () => {
+        try {
+            await joinEventById(id);
+            const data = await fetchEventById(id, 'all');
+            setEvent(data);
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -80,6 +118,42 @@ export default function EventDetailPage() {
                         <p className="mt-1 font-mono text-2xl font-extrabold">{event.join_code}</p>
                     </div>
                 </div>
+
+                {isTypingEvent && (
+                    <div className="mt-6 flex flex-wrap gap-3">
+                        <Link
+                            to={`/events/${id}/lobby`}
+                            className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+                        >
+                            {event.status === 'active' ? 'Перейти до гри' : 'Лобі команд'}
+                        </Link>
+                        {event.status === 'active' && (
+                            <Link
+                                to={`/events/${id}/play`}
+                                className="rounded-2xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5"
+                            >
+                                Live гонка
+                            </Link>
+                        )}
+                        {user && !isParticipant && event.status !== 'finished' && (
+                            <button
+                                type="button"
+                                onClick={handleJoinEvent}
+                                className="rounded-2xl bg-bg px-5 py-2.5 text-sm font-semibold hover:bg-primary/10"
+                            >
+                                Приєднатися до заходу
+                            </button>
+                        )}
+                        {isHost && event.status !== 'finished' && (
+                            <Link
+                                to="/events/create/typing"
+                                className="rounded-2xl bg-bg px-5 py-2.5 text-sm font-semibold text-muted hover:text-primary"
+                            >
+                                + Новий typing race
+                            </Link>
+                        )}
+                    </div>
+                )}
 
                 <div className="mt-6 grid gap-3 sm:grid-cols-3">
                     <div className="rounded-xl bg-bg p-4">
@@ -147,6 +221,23 @@ export default function EventDetailPage() {
                         </ul>
                     )}
                 </div>
+
+                {typingActivity?.settings && isTeamRelaySettings(typingActivity.settings) && (
+                    <div className="mt-8 space-y-8">
+                        <div>
+                            <h3 className="text-lg font-bold">{typingActivity.title}</h3>
+                            <p className="mt-1 text-sm text-muted">
+                                Командний relay · {typingActivity.settings.team_size} гравців у команді
+                            </p>
+                            <div className="mt-4">
+                                <TypingRacePreview settings={typingActivity.settings} />
+                            </div>
+                        </div>
+                        {teamLeaderboard.length > 0 && (
+                            <TeamLeaderboard teams={teamLeaderboard} />
+                        )}
+                    </div>
+                )}
 
                 {event.activities?.length > 0 && (
                     <div className="mt-8">
