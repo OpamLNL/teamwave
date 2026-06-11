@@ -85,7 +85,11 @@ export default function Sidebar({ mobileOpen, onClose }) {
             <div className="border-t border-white/10 p-4">
                 {user ? (
                     <div className="rounded-2xl bg-white/5 p-3">
-                        <div className="flex items-center gap-3">
+                        <Link
+                            to={`/users/${user.id}`}
+                            onClick={onClose}
+                            className="flex items-center gap-3 rounded-xl transition hover:bg-white/5"
+                        >
                             <UserAvatar
                                 src={user.avatar_url}
                                 name={user.name}
@@ -95,7 +99,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
                                 <p className="truncate text-sm font-semibold text-white">{user.name}</p>
                                 <p className="truncate text-xs text-sidebar-muted">{user.email}</p>
                             </div>
-                        </div>
+                        </Link>
                         <button
                             type="button"
                             onClick={logout}

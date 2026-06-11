@@ -37,6 +37,10 @@ export async function fetchTemplates(params = {}) {
     return apiGet(url);
 }
 
+export async function fetchEventParticipants(eventId) {
+    return apiGet(endpoints.events.participants(eventId));
+}
+
 export async function fetchTemplateById(id) {
     return apiGet(`${endpoints.templates.byId(id)}?include=activities`);
 }

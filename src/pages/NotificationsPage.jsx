@@ -79,7 +79,7 @@ export default function NotificationsPage() {
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">Сповіщення</h1>
                     <p className="text-sm text-muted mt-1">
-                        Лайки, коментарі та нові підписники
+                        Лайки, коментарі та запрошення в команду
                         {unread > 0 ? ` · ${unread} непрочитаних` : ''}
                     </p>
                 </div>

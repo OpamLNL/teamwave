@@ -48,6 +48,16 @@ export const endpoints = {
         events: (id) => `${API_BASE_URL}/users/${id}/events`,
         comments: (id) => `${API_BASE_URL}/users/${id}/comments`,
         stats: (id) => `${API_BASE_URL}/users/${id}/stats`,
+        teams: (id) => `${API_BASE_URL}/users/${id}/teams`,
+    },
+    teammates: {
+        byUser: (userId) => `${API_BASE_URL}/teammates/users/${userId}`,
+        status: (userId) => `${API_BASE_URL}/teammates/users/${userId}/status`,
+        incoming: `${API_BASE_URL}/teammates/me/incoming`,
+        invite: (userId) => `${API_BASE_URL}/teammates/users/${userId}/invite`,
+        accept: (userId) => `${API_BASE_URL}/teammates/users/${userId}/accept`,
+        decline: (userId) => `${API_BASE_URL}/teammates/users/${userId}/decline`,
+        remove: (userId) => `${API_BASE_URL}/teammates/users/${userId}`,
     },
     events: {
         list: `${API_BASE_URL}/events`,

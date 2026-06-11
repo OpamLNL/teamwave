@@ -28,7 +28,8 @@ export async function markNotificationRead(id) {
 }
 
 const TYPE_LABELS = {
-    event_invite: 'Запрошення',
+    event_invite: 'Запрошення на захід',
+    team_invite: 'Запрошення в команду',
     activity_started: 'Активність розпочата',
     activity_ended: 'Активність завершена',
     score_update: 'Оновлення балів',
@@ -37,6 +38,9 @@ const TYPE_LABELS = {
 };
 
 export function notificationTitle(n) {
+    if (n.type === 'team_invite' && n.actor_name) {
+        return `${n.actor_name} запросив(ла) вас у команду`;
+    }
     if (n.preview) return n.preview;
     const label = TYPE_LABELS[n.type] || 'Сповіщення';
     const actor = n.actor_name ? `${n.actor_name}: ` : '';
@@ -57,6 +61,7 @@ export function notificationLink(n) {
 }
 
 export function notificationIcon(n) {
+    if (n.type === 'team_invite') return '🤝';
     if (n.type === 'event_invite') return '📨';
     if (n.type === 'activity_started') return '▶️';
     if (n.type === 'activity_ended') return '✅';

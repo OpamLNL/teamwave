@@ -1,7 +1,40 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { fetchEventById } from '../utils/events';
+import AuthorLink from '../components/AuthorLink/AuthorLink';
 import StatusBadge from '../components/events/StatusBadge';
+
+const PARTICIPANT_ROLE_LABELS = {
+    participant: 'Учасник',
+    host: 'Ведучий',
+    organizer: 'Організатор',
+};
+
+function ParticipantRow({ participant }) {
+    return (
+        <li className="flex items-center justify-between gap-3 rounded-xl border border-border bg-bg px-4 py-3">
+            <AuthorLink
+                userId={participant.user_id}
+                name={participant.user_name}
+                avatarUrl={participant.user_avatar}
+                avatarClassName="h-10 w-10 rounded-xl object-cover border border-border shrink-0"
+            />
+            <div className="flex flex-wrap items-center justify-end gap-2 text-right">
+                {participant.team_name && (
+                    <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted">
+                        {participant.team_name}
+                    </span>
+                )}
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    {PARTICIPANT_ROLE_LABELS[participant.role_in_event] || participant.role_in_event}
+                </span>
+                {participant.score > 0 && (
+                    <span className="text-xs font-semibold text-muted">{participant.score} б.</span>
+                )}
+            </div>
+        </li>
+    );
+}
 
 export default function EventDetailPage() {
     const { id } = useParams();
@@ -29,6 +62,8 @@ export default function EventDetailPage() {
         );
     }
 
+    const participants = Array.isArray(event.participants) ? event.participants : [];
+
     return (
         <div className="space-y-6">
             <Link to="/events" className="inline-flex text-sm font-semibold text-primary hover:opacity-80">← Назад до заходів</Link>
@@ -39,12 +74,6 @@ export default function EventDetailPage() {
                         <StatusBadge status={event.status} />
                         <h2 className="mt-3 text-3xl font-extrabold tracking-tight">{event.title}</h2>
                         <p className="mt-3 max-w-2xl text-muted">{event.description}</p>
-                        {(event.organizer_name || event.host_name) && (
-                            <p className="mt-3 text-sm text-muted">
-                                {event.organizer_name && <>Організатор: <span className="font-semibold text-text">{event.organizer_name}</span></>}
-                                {event.host_name && <> · Ведучий: <span className="font-semibold text-text">{event.host_name}</span></>}
-                            </p>
-                        )}
                     </div>
                     <div className="rounded-2xl bg-bg px-5 py-4 text-center">
                         <p className="text-xs uppercase tracking-wider text-muted">Код входу</p>
@@ -63,8 +92,60 @@ export default function EventDetailPage() {
                     </div>
                     <div className="rounded-xl bg-bg p-4">
                         <p className="text-xs text-muted">Учасники</p>
-                        <p className="mt-1 font-semibold">{event.participants_count ?? 0} / {event.max_participants}</p>
+                        <p className="mt-1 font-semibold">{event.participants_count ?? participants.length} / {event.max_participants}</p>
                     </div>
+                </div>
+
+                {(event.organizer_id || event.host_id) && (
+                    <div className="mt-8">
+                        <h3 className="text-lg font-bold">Команда заходу</h3>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            {event.organizer_id && (
+                                <div className="rounded-xl border border-border bg-bg px-4 py-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Організатор</p>
+                                    <div className="mt-2">
+                                        <AuthorLink
+                                            userId={event.organizer_id}
+                                            name={event.organizer_name}
+                                            avatarUrl={event.organizer_avatar}
+                                            avatarClassName="h-10 w-10 rounded-xl object-cover border border-border shrink-0"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                            {event.host_id && (
+                                <div className="rounded-xl border border-border bg-bg px-4 py-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">Ведучий</p>
+                                    <div className="mt-2">
+                                        <AuthorLink
+                                            userId={event.host_id}
+                                            name={event.host_name}
+                                            avatarUrl={event.host_avatar}
+                                            avatarClassName="h-10 w-10 rounded-xl object-cover border border-border shrink-0"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div className="mt-8">
+                    <h3 className="text-lg font-bold">
+                        Учасники
+                        <span className="ml-2 text-sm font-semibold text-muted">
+                            ({participants.length})
+                        </span>
+                    </h3>
+                    {participants.length === 0 ? (
+                        <p className="mt-3 text-sm text-muted">Поки ніхто не приєднався до заходу.</p>
+                    ) : (
+                        <ul className="mt-4 space-y-3">
+                            {participants.map((participant) => (
+                                <ParticipantRow key={participant.id ?? `${participant.user_id}-${participant.event_id}`} participant={participant} />
+                            ))}
+                        </ul>
+                    )}
                 </div>
 
                 {event.activities?.length > 0 && (
