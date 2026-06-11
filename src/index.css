@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --color-bg: 244 247 251;
+    --color-surface: 255 255 255;
+    --color-text: 15 23 42;
+    --color-muted: 100 116 139;
+    --color-primary: 14 165 233;
+    --color-accent: 16 185 129;
+    --color-border: 226 232 240;
+    --color-sidebar: 15 23 42;
+    --color-sidebar-muted: 148 163 184;
+    --color-sidebar-hover: 30 41 59;
+    --color-sidebar-active: 14 165 233;
+}
+
+.dark {
+    --color-bg: 8 12 20;
+    --color-surface: 15 23 42;
+    --color-text: 241 245 249;
+    --color-muted: 148 163 184;
+    --color-primary: 56 189 248;
+    --color-accent: 52 211 153;
+    --color-border: 30 41 59;
+    --color-sidebar: 2 6 23;
+    --color-sidebar-muted: 100 116 139;
+    --color-sidebar-hover: 15 23 42;
+    --color-sidebar-active: 14 165 233;
+}
+
+@layer base {
+    html,
+    body {
+        height: 100%;
+        background-color: rgb(var(--color-bg));
+        color: rgb(var(--color-text));
+    }
+
+    ::selection {
+        background-color: rgb(var(--color-primary) / 0.25);
+    }
+}
