@@ -59,6 +59,16 @@ export async function updateMyProfile(payload) {
     return parseResponse(res, 'Не вдалося оновити профіль');
 }
 
+export async function uploadMyAvatar(file) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const res = await authFetch(endpoints.users.meAvatar, {
+        method: 'POST',
+        body: formData,
+    });
+    return parseResponse(res, 'Не вдалося завантажити аватар');
+}
+
 export async function fetchUserTeams(userId) {
     const data = await apiGet(endpoints.users.teams(userId));
     return Array.isArray(data) ? data : [];

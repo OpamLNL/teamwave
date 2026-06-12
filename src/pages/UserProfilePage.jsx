@@ -15,9 +15,11 @@ import {
     removeTeammate,
     sendTeammateInvite,
     updateMyProfile,
+    uploadMyAvatar,
 } from '../utils/teammates';
 import EventCard from '../components/events/EventCard';
 import UserAvatar from '../components/UserAvatar/UserAvatar';
+import AvatarEditor from '../components/UserAvatar/AvatarEditor';
 
 const ROLE_LABELS = {
     participant: 'Учасник',
@@ -179,12 +181,23 @@ export default function UserProfilePage() {
             <section className="rounded-[1.75rem] border border-border bg-surface p-6 sm:p-8">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-wrap items-center gap-4 min-w-0">
-                        <UserAvatar
-                            src={profile.avatar_url}
-                            userId={profile.id}
-                            name={profile.name}
-                            className="h-20 w-20 rounded-2xl object-cover"
-                        />
+                        {isOwnProfile ? (
+                            <AvatarEditor
+                                user={profile}
+                                onUpdated={(updated) => {
+                                    setProfile(updated);
+                                    updateProfile({ avatar_url: updated.avatar_url });
+                                    setActionMessage('Аватар оновлено');
+                                }}
+                            />
+                        ) : (
+                            <UserAvatar
+                                src={profile.avatar_url}
+                                userId={profile.id}
+                                name={profile.name}
+                                className="h-20 w-20 rounded-2xl object-cover"
+                            />
+                        )}
                         <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-wide text-primary">
                                 {isOwnProfile ? 'Мій профіль' : 'Профіль учасника'}
