@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
+import { resolveAvatarUrl } from '../../utils/mediaUrl';
 
 function DefaultAvatarGraphic({ className, label }) {
     return (
@@ -24,22 +24,23 @@ function hasAvatar(src) {
     return true;
 }
 
-export function getAvatarUrl(src) {
+export function getAvatarUrl(src, userId) {
     if (!hasAvatar(src)) return null;
-    return resolveMediaUrl(src.trim());
+    return resolveAvatarUrl(src.trim(), userId);
 }
 
 export default function UserAvatar({
     src,
+    userId,
     name,
     className = 'w-8 h-8 rounded-full object-cover border border-border shrink-0',
 }) {
     const [failed, setFailed] = useState(false);
-    const avatarUrl = hasAvatar(src) && !failed ? getAvatarUrl(src) : null;
+    const avatarUrl = hasAvatar(src) && !failed ? getAvatarUrl(src, userId) : null;
 
     useEffect(() => {
         setFailed(false);
-    }, [src]);
+    }, [src, userId]);
 
     if (!avatarUrl) {
         return (

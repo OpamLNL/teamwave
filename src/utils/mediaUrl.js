@@ -1,4 +1,4 @@
-import { SERVER_BASE_URL as CONFIG_SERVER_BASE_URL } from '../api/config';
+import { endpoints, SERVER_BASE_URL as CONFIG_SERVER_BASE_URL } from '../api/config';
 
 const LOCALHOST_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i;
 const PRODUCTION_SERVER_FALLBACK = 'https://teamwave-server.vercel.app';
@@ -37,4 +37,34 @@ export function resolveMediaUrl(url) {
     }
 
     return `${base}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
+}
+
+const IMGBB_PATTERN = /i\.ibb\.co|imgbb\.com/i;
+
+/** Аватар: imgbb часто падає в браузері — віддаємо через наш API. */
+export function resolveAvatarUrl(src, userId) {
+    if (src == null) return null;
+
+    const raw = String(src).trim();
+    if (!raw) return null;
+
+    if (IMGBB_PATTERN.test(raw) && userId) {
+        return endpoints.users.avatarImage(userId);
+    }
+
+    return resolveMediaUrl(raw);
+}
+
+/** Обкладинка заходу: imgbb часто падає в браузері — віддаємо через наш API. */
+export function resolveEventCoverUrl(event) {
+    if (!event?.cover_url) return null;
+
+    const raw = String(event.cover_url).trim();
+    if (!raw) return null;
+
+    if (IMGBB_PATTERN.test(raw) && event.id) {
+        return endpoints.events.coverImage(event.id);
+    }
+
+    return resolveMediaUrl(raw);
 }

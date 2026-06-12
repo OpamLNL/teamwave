@@ -17,7 +17,7 @@ export default function AuthorLink({
             to={`/users/${userId}`}
             className={`inline-flex items-center gap-2 min-w-0 hover:opacity-80 transition ${className}`}
         >
-            <UserAvatar src={avatarUrl} name={label} className={avatarClassName} />
+            <UserAvatar src={avatarUrl} userId={userId} name={label} className={avatarClassName} />
             <span className="text-sm font-semibold text-text truncate">{label}</span>
         </Link>
     );

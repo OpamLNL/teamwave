@@ -43,7 +43,7 @@ function TeammateCard({ member }) {
             to={`/users/${member.id}`}
             className="flex items-center gap-3 rounded-2xl border border-border bg-bg px-4 py-3 transition hover:border-primary/40 hover:bg-surface"
         >
-            <UserAvatar src={member.avatar_url} name={member.name} className="h-11 w-11 rounded-xl object-cover" />
+            <UserAvatar src={member.avatar_url} userId={member.id} name={member.name} className="h-11 w-11 rounded-xl object-cover" />
             <div className="min-w-0">
                 <p className="font-semibold truncate">{member.name}</p>
                 <p className="text-xs text-muted truncate">
@@ -181,6 +181,7 @@ export default function UserProfilePage() {
                     <div className="flex flex-wrap items-center gap-4 min-w-0">
                         <UserAvatar
                             src={profile.avatar_url}
+                            userId={profile.id}
                             name={profile.name}
                             className="h-20 w-20 rounded-2xl object-cover"
                         />
@@ -366,6 +367,7 @@ export default function UserProfilePage() {
                                 <Link to={`/users/${request.from_user_id}`} className="flex items-center gap-3 min-w-0">
                                     <UserAvatar
                                         src={request.from_user_avatar}
+                                        userId={request.from_user_id}
                                         name={request.from_user_name}
                                         className="h-10 w-10 rounded-xl object-cover"
                                     />

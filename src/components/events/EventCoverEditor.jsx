@@ -1,14 +1,16 @@
 import { useRef, useState } from 'react';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
+import { resolveEventCoverUrl } from '../../utils/mediaUrl';
 import { resolveEventIcon } from '../../utils/eventIcons';
 import { uploadEventCover } from '../../utils/events';
+import { EventCoverHero } from './EventCoverImage';
 
 export default function EventCoverEditor({ event, canEdit, onUpdated }) {
     const fileInputRef = useRef(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState('');
+    const [coverKey, setCoverKey] = useState(0);
 
-    const coverUrl = resolveMediaUrl(event.cover_url);
+    const coverUrl = resolveEventCoverUrl(event);
     const icon = resolveEventIcon(event);
 
     const handleUpload = async (file) => {
@@ -17,6 +19,7 @@ export default function EventCoverEditor({ event, canEdit, onUpdated }) {
         setError('');
         try {
             const updated = await uploadEventCover(event.id, file);
+            setCoverKey((k) => k + 1);
             onUpdated?.(updated);
         } catch (err) {
             setError(err.message || 'Не вдалося завантажити');
@@ -27,13 +30,7 @@ export default function EventCoverEditor({ event, canEdit, onUpdated }) {
 
     return (
         <div className="relative overflow-hidden rounded-2xl border border-border bg-bg">
-            {coverUrl ? (
-                <img src={coverUrl} alt="" className="h-44 w-full object-cover sm:h-52" />
-            ) : (
-                <div className="flex h-44 items-center justify-center bg-gradient-to-br from-primary/15 to-accent/10 sm:h-52">
-                    <span className="text-6xl">{icon}</span>
-                </div>
-            )}
+            <EventCoverHero key={coverKey} coverUrl={coverUrl} event={event} />
 
             <div className="absolute left-4 top-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/30 bg-surface/90 text-3xl shadow-lg backdrop-blur">
                 {icon}
@@ -47,7 +44,7 @@ export default function EventCoverEditor({ event, canEdit, onUpdated }) {
                         onClick={() => fileInputRef.current?.click()}
                         className="rounded-xl bg-surface/95 px-4 py-2 text-sm font-semibold shadow backdrop-blur hover:bg-white disabled:opacity-60"
                     >
-                        {uploading ? 'Завантаження…' : coverUrl ? 'Змінити обкладинку' : 'Додати обкладинку'}
+                        {uploading ? 'Завантаження…' : event.cover_url ? 'Змінити обкладинку' : 'Додати обкладинку'}
                     </button>
                     <input
                         ref={fileInputRef}

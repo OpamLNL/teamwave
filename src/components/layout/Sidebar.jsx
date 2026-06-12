@@ -100,6 +100,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
                         >
                             <UserAvatar
                                 src={user.avatar_url}
+                                userId={user.id}
                                 name={user.name}
                                 className="h-10 w-10 rounded-xl object-cover border border-white/10"
                             />

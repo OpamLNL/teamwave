@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import { resolveEventIcon } from '../../utils/eventIcons';
-import { resolveMediaUrl } from '../../utils/mediaUrl';
+import { resolveEventCoverUrl } from '../../utils/mediaUrl';
+import EventCoverImage from './EventCoverImage';
 
 function formatDate(value) {
     return new Date(value).toLocaleString('uk-UA', {
@@ -14,7 +15,7 @@ function formatDate(value) {
 
 export default function EventCard({ event }) {
     const icon = resolveEventIcon(event);
-    const coverUrl = resolveMediaUrl(event.cover_url);
+    const coverUrl = resolveEventCoverUrl(event);
 
     return (
         <Link
@@ -23,7 +24,12 @@ export default function EventCard({ event }) {
         >
             {coverUrl ? (
                 <div className="relative h-36 overflow-hidden">
-                    <img src={coverUrl} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+                    <EventCoverImage
+                        coverUrl={coverUrl}
+                        icon={icon}
+                        fallbackClassName="flex h-36 w-full items-center justify-center bg-gradient-to-br from-primary/15 to-accent/10"
+                        iconClassName="text-4xl"
+                    />
                     <span className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-xl bg-surface/90 text-2xl shadow backdrop-blur">
                         {icon}
                     </span>

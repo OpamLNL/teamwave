@@ -130,6 +130,7 @@ export default function NotificationsPage() {
                                 <div className="flex items-start gap-3">
                                     <UserAvatar
                                         src={n.actor_avatar}
+                                        userId={n.actor_id}
                                         name={n.actor_name}
                                         className="w-10 h-10 rounded-full object-cover shrink-0"
                                     />
