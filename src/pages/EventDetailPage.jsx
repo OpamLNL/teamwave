@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { fetchEventById, fetchEventTeamLeaderboard, joinEventById } from '../utils/events';
@@ -6,11 +6,13 @@ import { resolveEventIcon } from '../utils/eventIcons';
 import { canManageEvent } from '../utils/permissions';
 import EventCoverEditor from '../components/events/EventCoverEditor';
 import EventIconPicker from '../components/events/EventIconPicker';
+import EventTeamRegistration from '../components/events/EventTeamRegistration';
 import AuthorLink from '../components/AuthorLink/AuthorLink';
 import StatusBadge from '../components/events/StatusBadge';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
 import TeamLeaderboard from '../components/typing/TeamLeaderboard';
-import { isTeamRelaySettings, isTypingRaceActivity } from '../utils/typingRace';
+import { isTeamRelaySettings, resolveTypingRaceActivity } from '../utils/typingRace';
+import TeamEventParameters from '../components/events/TeamEventParameters';
 
 const PARTICIPANT_ROLE_LABELS = {
     participant: 'Учасник',
@@ -57,7 +59,7 @@ export default function EventDetailPage() {
         fetchEventById(id, 'all')
             .then(async (data) => {
                 setEvent(data);
-                const typingActivity = data?.activities?.find(isTypingRaceActivity);
+                const typingActivity = resolveTypingRaceActivity(data?.activities);
                 if (typingActivity && isTeamRelaySettings(typingActivity.settings)) {
                     try {
                         const teams = await fetchEventTeamLeaderboard(id);
@@ -71,6 +73,15 @@ export default function EventDetailPage() {
             })
             .catch((err) => setError(err.message || 'Захід не знайдено'))
             .finally(() => setLoading(false));
+    }, [id]);
+
+    const refreshEventParticipants = useCallback(async () => {
+        try {
+            const data = await fetchEventById(id, 'all');
+            setEvent(data);
+        } catch {
+            /* ignore refresh errors */
+        }
     }, [id]);
 
     if (loading) {
@@ -87,8 +98,8 @@ export default function EventDetailPage() {
     }
 
     const participants = Array.isArray(event.participants) ? event.participants : [];
-    const typingActivity = event.activities?.find(isTypingRaceActivity);
-    const isTypingEvent = Boolean(typingActivity && isTeamRelaySettings(typingActivity.settings));
+    const typingActivity = resolveTypingRaceActivity(event.activities);
+    const isTypingEvent = Boolean(typingActivity);
     const isHost = canManageEvent(user, role, event);
     const isParticipant = user && participants.some((p) => Number(p.user_id) === Number(user.id));
 
@@ -137,14 +148,22 @@ export default function EventDetailPage() {
                     <div className="mt-6 flex flex-wrap gap-3">
                         <Link
                             to={`/events/${id}/lobby`}
-                            className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+                            className="rounded-2xl border border-border bg-bg px-5 py-2.5 text-sm font-semibold hover:bg-surface"
                         >
-                            {event.status === 'active' ? 'Перейти до гри' : 'Лобі команд'}
+                            {isHost ? 'Керування гонкою' : 'Лобі'}
                         </Link>
+                        {isParticipant && event.status !== 'finished' && event.status !== 'active' && (
+                            <Link
+                                to={`/events/${id}/practice`}
+                                className="rounded-2xl border border-accent/30 bg-accent/10 px-5 py-2.5 text-sm font-semibold text-accent hover:bg-accent/15"
+                            >
+                                Тренування
+                            </Link>
+                        )}
                         {event.status === 'active' && (
                             <Link
                                 to={`/events/${id}/play`}
-                                className="rounded-2xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5"
+                                className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90"
                             >
                                 Live гонка
                             </Link>
@@ -153,18 +172,10 @@ export default function EventDetailPage() {
                             <button
                                 type="button"
                                 onClick={handleJoinEvent}
-                                className="rounded-2xl bg-bg px-5 py-2.5 text-sm font-semibold hover:bg-primary/10"
+                                className="rounded-2xl border border-primary px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary/5"
                             >
                                 Приєднатися до заходу
                             </button>
-                        )}
-                        {isHost && event.status !== 'finished' && (
-                            <Link
-                                to="/events/create"
-                                className="rounded-2xl bg-bg px-5 py-2.5 text-sm font-semibold text-muted hover:text-primary"
-                            >
-                                + Новий захід
-                            </Link>
                         )}
                     </div>
                 )}
@@ -184,9 +195,24 @@ export default function EventDetailPage() {
                     </div>
                 </div>
 
+                {isTypingEvent && typingActivity?.settings && event.status !== 'finished' && (
+                    <div className="mt-8 space-y-4">
+                        <TeamEventParameters settings={typingActivity.settings} />
+                        <div className="rounded-2xl border border-border bg-bg p-5 sm:p-6">
+                            <EventTeamRegistration
+                                eventId={id}
+                                event={event}
+                                user={user}
+                                teamSize={typingActivity.settings.team_size ?? 4}
+                                onTeamsChanged={refreshEventParticipants}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 {(event.organizer_id || event.host_id) && (
                     <div className="mt-8">
-                        <h3 className="text-lg font-bold">Команда заходу</h3>
+                        <h3 className="text-lg font-bold">Організатори заходу</h3>
                         <div className="mt-4 grid gap-3 sm:grid-cols-2">
                             {event.organizer_id && (
                                 <div className="rounded-xl border border-border bg-bg px-4 py-3">
@@ -236,7 +262,7 @@ export default function EventDetailPage() {
                     )}
                 </div>
 
-                {typingActivity?.settings && isTeamRelaySettings(typingActivity.settings) && (
+                {typingActivity?.settings && (
                     <div className="mt-8 space-y-8">
                         <div>
                             <h3 className="text-lg font-bold">{typingActivity.title}</h3>

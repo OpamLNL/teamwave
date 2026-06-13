@@ -162,6 +162,7 @@ export default function TypingRacePlayPage() {
                             canType={state.can_type}
                             onType={handleType}
                             error={typeError}
+                            mySlot={state.my_slot}
                         />
                     </div>
                 )}

@@ -17,6 +17,7 @@ import AdminPage from './pages/admin/AdminPage';
 import CreateEventPage from './pages/CreateEventPage';
 import EventLobbyPage from './pages/EventLobbyPage';
 import TypingRacePlayPage from './pages/TypingRacePlayPage';
+import TypingRacePracticePage from './pages/TypingRacePracticePage';
 
 export default function App() {
     return (
@@ -29,6 +30,7 @@ export default function App() {
                 <Route path="/events/create" element={<CreateEventPage />} />
                 <Route path="/events/create/typing" element={<CreateEventPage />} />
                 <Route path="/events/:id/lobby" element={<EventLobbyPage />} />
+                <Route path="/events/:id/practice" element={<TypingRacePracticePage />} />
                 <Route path="/events/:id/play" element={<TypingRacePlayPage />} />
                 <Route path="/events/:id" element={<EventDetailPage />} />
                 <Route path="/templates" element={<TemplatesPage />} />

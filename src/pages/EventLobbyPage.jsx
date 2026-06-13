@@ -2,24 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-    createEventTeam,
     fetchEventById,
     fetchEventTeams,
     fetchTypingState,
     finishTypingRace,
-    joinEventById,
-    joinEventTeamSlot,
-    leaveEventTeam,
-    markEventTeamReady,
-    sendTypedChar,
     startTypingRace,
     updateEvent,
 } from '../utils/events';
 import { canManageEvent } from '../utils/permissions';
-import { isTeamRelaySettings, isTypingRaceActivity } from '../utils/typingRace';
+import { isTeamRelaySettings, isTypingRaceActivity, resolveTypingRaceActivity } from '../utils/typingRace';
+import EventTeamRegistration from '../components/events/EventTeamRegistration';
 import TypingRacePreview from '../components/typing/TypingRacePreview';
 import TeamLeaderboard from '../components/typing/TeamLeaderboard';
-import TypingRaceLive from '../components/typing/TypingRaceLive';
 import StatusBadge from '../components/events/StatusBadge';
 
 export default function EventLobbyPage() {
@@ -30,25 +24,24 @@ export default function EventLobbyPage() {
     const [event, setEvent] = useState(null);
     const [teams, setTeams] = useState([]);
     const [typingState, setTypingState] = useState(null);
-    const [teamName, setTeamName] = useState('');
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState('');
     const [error, setError] = useState('');
 
     const typingActivity = useMemo(
-        () => event?.activities?.find(isTypingRaceActivity),
+        () => resolveTypingRaceActivity(event?.activities),
         [event]
     );
     const teamSize = typingActivity?.settings?.team_size ?? 4;
     const isHost = canManageEvent(user, role, event);
-    const myTeam = teams.find((t) => t.members?.some((m) => Number(m.user_id) === Number(user?.id)));
     const isFinished = event?.status === 'finished';
 
     const loadAll = useCallback(async () => {
         const data = await fetchEventById(id, 'all');
         setEvent(data);
-        const teamList = await fetchEventTeams(id);
-        setTeams(Array.isArray(teamList) ? teamList : []);
+
+        const teamData = await fetchEventTeams(id);
+        setTeams(teamData.teams);
 
         const activity = data?.activities?.find(isTypingRaceActivity);
         if (activity) {
@@ -89,67 +82,6 @@ export default function EventLobbyPage() {
 
         return () => clearInterval(timer);
     }, [id, typingActivity, event, navigate]);
-
-    const ensureJoined = async () => {
-        if (!user) throw new Error('Увійдіть, щоб приєднатися');
-        await joinEventById(id);
-    };
-
-    const handleCreateTeam = async (e) => {
-        e.preventDefault();
-        setBusy('create');
-        setError('');
-        try {
-            await ensureJoined();
-            await createEventTeam(id, teamName.trim());
-            setTeamName('');
-            await loadAll();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setBusy('');
-        }
-    };
-
-    const handleJoinSlot = async (teamId, slotIndex) => {
-        setBusy(`slot-${teamId}-${slotIndex}`);
-        setError('');
-        try {
-            await ensureJoined();
-            await joinEventTeamSlot(id, teamId, slotIndex);
-            await loadAll();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setBusy('');
-        }
-    };
-
-    const handleLeaveTeam = async (teamId) => {
-        setBusy('leave');
-        setError('');
-        try {
-            await leaveEventTeam(id, teamId);
-            await loadAll();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setBusy('');
-        }
-    };
-
-    const handleReady = async (teamId) => {
-        setBusy('ready');
-        setError('');
-        try {
-            await markEventTeamReady(id, teamId);
-            await loadAll();
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setBusy('');
-        }
-    };
 
     const handleOpenLobby = async () => {
         setBusy('open');
@@ -203,7 +135,7 @@ export default function EventLobbyPage() {
         );
     }
 
-    const readyTeams = teams.filter((t) => t.status === 'ready' || t.members_count >= teamSize);
+    const readyTeams = teams.filter((t) => t.status === 'ready');
     const finishedTeams = teams
         .filter((t) => t.completion_time_ms != null)
         .sort((a, b) => a.completion_time_ms - b.completion_time_ms)
@@ -271,111 +203,14 @@ export default function EventLobbyPage() {
             </section>
 
             {!isFinished && (
-                <section className="rounded-[1.75rem] border border-border bg-surface p-6 sm:p-8 space-y-6">
-                    <div>
-                        <h3 className="text-lg font-bold">Команди ({teams.length})</h3>
-                        <p className="text-sm text-muted">Створіть команду або оберіть вільний слот · потрібно {teamSize} гравців</p>
-                    </div>
-
-                    {user && !myTeam && (
-                        <form onSubmit={handleCreateTeam} className="flex flex-wrap gap-3">
-                            <input
-                                value={teamName}
-                                onChange={(e) => setTeamName(e.target.value)}
-                                placeholder="Назва нової команди"
-                                className="min-w-[220px] flex-1 rounded-2xl border border-border bg-bg px-4 py-2.5 outline-none focus:border-primary"
-                            />
-                            <button
-                                type="submit"
-                                disabled={busy === 'create' || !teamName.trim()}
-                                className="rounded-2xl bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                            >
-                                Створити команду
-                            </button>
-                        </form>
-                    )}
-
-                    {teams.length === 0 && (
-                        <p className="text-sm text-muted">Поки немає команд — створіть першу.</p>
-                    )}
-
-                    <div className="space-y-4">
-                        {teams.map((team) => {
-                            const isMine = Number(myTeam?.id) === Number(team.id);
-                            const isCaptain = Number(team.captain_user_id) === Number(user?.id);
-                            const slots = Array.from({ length: teamSize }, (_, slot) => {
-                                const member = team.members?.find((m) => m.slot_index === slot);
-                                return { slot, member };
-                            });
-
-                            return (
-                                <article key={team.id} className="rounded-2xl border border-border bg-bg p-4">
-                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                        <div>
-                                            <h4 className="font-bold">{team.name}</h4>
-                                            <p className="text-xs text-muted">
-                                                {team.members_count}/{teamSize} · {team.status}
-                                            </p>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            {isMine && team.status === 'open' && (
-                                                <>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleReady(team.id)}
-                                                        disabled={busy === 'ready' || team.members_count < teamSize}
-                                                        className="rounded-xl bg-accent/15 px-3 py-1.5 text-xs font-semibold text-accent disabled:opacity-50"
-                                                    >
-                                                        Готові
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleLeaveTeam(team.id)}
-                                                        disabled={busy === 'leave'}
-                                                        className="rounded-xl bg-surface px-3 py-1.5 text-xs font-semibold text-muted"
-                                                    >
-                                                        Покинути
-                                                    </button>
-                                                </>
-                                            )}
-                                            {isCaptain && team.status === 'ready' && (
-                                                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                                                    Очікуємо старт
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                                        {slots.map(({ slot, member }) => (
-                                            <button
-                                                key={slot}
-                                                type="button"
-                                                disabled={
-                                                    Boolean(member)
-                                                    || (myTeam && Number(myTeam.id) !== Number(team.id))
-                                                    || !['planned', 'draft'].includes(event.status)
-                                                }
-                                                onClick={() => handleJoinSlot(team.id, slot)}
-                                                className="rounded-xl border border-border bg-surface px-3 py-2 text-left text-sm disabled:cursor-default disabled:opacity-80 hover:border-primary/40"
-                                            >
-                                                <span className="text-xs text-muted">Слот {slot + 1}</span>
-                                                <p className="font-semibold truncate">
-                                                    {member?.user_name || (myTeam ? 'Вільно' : 'Приєднатися')}
-                                                </p>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
-
-                    {!user && (
-                        <p className="text-sm text-muted">
-                            <Link to="/login" className="font-semibold text-primary">Увійди</Link>, щоб створити або приєднатися до команди.
-                        </p>
-                    )}
+                <section className="rounded-[1.75rem] border border-border bg-surface p-6 sm:p-8">
+                    <EventTeamRegistration
+                        eventId={id}
+                        event={event}
+                        user={user}
+                        teamSize={teamSize}
+                        onTeamsChanged={setTeams}
+                    />
                 </section>
             )}
 

@@ -41,7 +41,8 @@ export function isTypingTemplate(template, activities = []) {
     return activities.some((a) => a.type === 'typing_race');
 }
 
+import { resolveTypingRaceActivity } from './typingRace';
+
 export function shouldOpenLobby(event) {
-    const activity = event?.activities?.find((a) => a.type === 'typing_race');
-    return activity?.settings?.mode === 'team_relay';
+    return Boolean(resolveTypingRaceActivity(event?.activities));
 }

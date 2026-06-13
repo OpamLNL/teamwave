@@ -110,7 +110,14 @@ export async function updateEvent(eventId, body) {
 }
 
 export async function fetchEventTeams(eventId) {
-    return apiGet(endpoints.events.teams(eventId));
+    const data = await apiGet(endpoints.events.teams(eventId));
+    if (Array.isArray(data)) {
+        return { teams: data, my_pending_request: null };
+    }
+    return {
+        teams: Array.isArray(data?.teams) ? data.teams : [],
+        my_pending_request: data?.my_pending_request ?? null,
+    };
 }
 
 export async function createEventTeam(eventId, name) {
@@ -125,6 +132,29 @@ export async function joinEventTeamSlot(eventId, teamId, slotIndex) {
     const res = await authFetch(endpoints.events.teamJoin(eventId, teamId), {
         method: 'POST',
         body: JSON.stringify({ slot_index: slotIndex }),
+    });
+    return parseAuthJson(res);
+}
+
+export async function acceptTeamJoinRequest(eventId, teamId, requestId) {
+    const res = await authFetch(endpoints.events.teamRequestAccept(eventId, teamId, requestId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function declineTeamJoinRequest(eventId, teamId, requestId) {
+    const res = await authFetch(endpoints.events.teamRequestDecline(eventId, teamId, requestId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function cancelTeamJoinRequest(eventId, teamId) {
+    const res = await authFetch(endpoints.events.teamJoin(eventId, teamId), {
+        method: 'DELETE',
     });
     return parseAuthJson(res);
 }
@@ -167,6 +197,35 @@ export async function sendTypedChar(eventId, activityId, eventTeamId, char) {
 
 export async function finishTypingRace(eventId, activityId) {
     const res = await authFetch(endpoints.events.typingFinish(eventId, activityId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function fetchPracticeState(eventId, activityId) {
+    const res = await authFetch(endpoints.events.practiceState(eventId, activityId));
+    return parseAuthJson(res);
+}
+
+export async function startPracticeRun(eventId, activityId) {
+    const res = await authFetch(endpoints.events.practiceStart(eventId, activityId), {
+        method: 'POST',
+        body: JSON.stringify({}),
+    });
+    return parseAuthJson(res);
+}
+
+export async function sendPracticeChar(eventId, activityId, char) {
+    const res = await authFetch(endpoints.events.practiceType(eventId, activityId), {
+        method: 'POST',
+        body: JSON.stringify({ char }),
+    });
+    return parseAuthJson(res);
+}
+
+export async function resetPracticeRun(eventId, activityId) {
+    const res = await authFetch(endpoints.events.practiceReset(eventId, activityId), {
         method: 'POST',
         body: JSON.stringify({}),
     });
