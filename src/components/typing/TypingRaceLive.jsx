@@ -1,5 +1,54 @@
 import { useEffect, useRef, useState } from 'react';
-import { getSegmentOwnerSlot, getSlotColor, getSlotMeta } from '../../utils/typingRace';
+import {
+    formatExpectedChar,
+    getExpectedChar,
+    getSegmentOwnerSlot,
+    getSlotColor,
+    getSlotMeta,
+    isLatinSegment,
+    splitTextChars,
+} from '../../utils/typingRace';
+
+function NextCharPrompt({ char, color, segmentText }) {
+    const label = formatExpectedChar(char);
+    const isSpace = char === ' ';
+
+    return (
+        <div
+            className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-surface px-4 py-3"
+            style={{ borderColor: `${color}55` }}
+        >
+            <div className="min-w-[4.5rem] text-center">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Наступний символ</p>
+                <div
+                    className="mt-1 flex min-h-14 items-center justify-center rounded-xl px-3 font-mono text-3xl font-extrabold"
+                    style={{
+                        color,
+                        backgroundColor: `${color}18`,
+                        boxShadow: `inset 0 0 0 2px ${color}`,
+                    }}
+                >
+                    {isSpace ? (
+                        <span className="text-base font-bold tracking-wide">␣</span>
+                    ) : (
+                        label
+                    )}
+                </div>
+            </div>
+            <div className="text-sm text-muted">
+                <p>
+                    Натисніть клавішу
+                    <strong className="mx-1" style={{ color }}>{label}</strong>
+                    на клавіатурі
+                </p>
+                {isSpace && <p className="mt-1 text-xs">Це пробіл — натисніть Space</p>}
+                {isLatinSegment(segmentText) && (
+                    <p className="mt-1 text-xs text-amber-700">Латинський фрагмент — увімкніть розкладку EN</p>
+                )}
+            </div>
+        </div>
+    );
+}
 
 function SlotLegend({ settings, mySlot, activeSlot }) {
     if (!settings?.slots?.length) return null;
@@ -39,7 +88,7 @@ function SlotLegend({ settings, mySlot, activeSlot }) {
     );
 }
 
-function StatusBadge({ canType, practiceMode, mySlotMeta, activeSlotMeta, isFinished }) {
+function StatusBadge({ canType, practiceMode, practiceRelayMode, mySlotMeta, activeSlotMeta, isFinished }) {
     if (isFinished) {
         return (
             <span className="rounded-full bg-surface px-3 py-1 text-xs font-semibold text-muted">
@@ -48,7 +97,7 @@ function StatusBadge({ canType, practiceMode, mySlotMeta, activeSlotMeta, isFini
         );
     }
 
-    if (canType && practiceMode && activeSlotMeta) {
+    if (canType && practiceMode && !practiceRelayMode && activeSlotMeta) {
         return (
             <span
                 className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
@@ -58,7 +107,7 @@ function StatusBadge({ canType, practiceMode, mySlotMeta, activeSlotMeta, isFini
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: activeSlotMeta.color }}
                 />
-                Тренування · зараз {activeSlotMeta.label.toLowerCase()}
+                Тренування · зараз {activeSlotMeta.label}
             </span>
         );
     }
@@ -104,6 +153,7 @@ export default function TypingRaceLive({
     onType,
     error,
     practiceMode = false,
+    practiceRelayMode = false,
     mySlot = null,
 }) {
     const inputRef = useRef(null);
@@ -128,11 +178,15 @@ export default function TypingRaceLive({
     const activeSlotMeta = getSlotMeta(settings, activeSlot);
     const mySlotMeta = getSlotMeta(settings, mySlot);
     const activeColor = activeSlotMeta?.color || getSlotColor(settings, activeSlot) || '#2563EB';
+    const currentSegment = segments[currentIndex];
+    const currentSegmentText = currentSegment?.text || '';
+    const nextChar = run?.is_finished ? null : getExpectedChar(currentSegmentText, typedChars);
 
     const handleKeyDown = async (event) => {
         if (!canType || !onType) return;
         if (event.ctrlKey || event.metaKey || event.altKey) return;
-        if (event.key.length !== 1) return;
+        if (event.key === 'Dead' || event.key === 'Unidentified') return;
+        if (splitTextChars(event.key).length !== 1) return;
 
         event.preventDefault();
         setLocalError('');
@@ -148,6 +202,14 @@ export default function TypingRaceLive({
         <div className="space-y-4">
             <SlotLegend settings={settings} mySlot={mySlot} activeSlot={activeSlot} />
 
+            {canType && nextChar != null && !run?.is_finished && (
+                <NextCharPrompt
+                    char={nextChar}
+                    color={activeColor}
+                    segmentText={currentSegmentText}
+                />
+            )}
+
             <div className="rounded-2xl border border-border bg-bg px-4 py-4 font-mono text-sm leading-8">
                 {segments.map((segment, index) => {
                     const ownerSlot = segment.slot ?? getSegmentOwnerSlot(segments, index);
@@ -155,11 +217,16 @@ export default function TypingRaceLive({
                     const isCurrent = index === currentIndex && !run?.is_finished;
                     const isPast = index < currentIndex || run?.is_finished;
                     const isMySegment = mySlot != null && Number(ownerSlot) === Number(mySlot);
+                    const segmentChars = splitTextChars(segment.text || '');
 
                     let content = segment.text;
                     if (isCurrent) {
-                        const done = segment.text.slice(0, typedChars);
-                        const rest = segment.text.slice(typedChars);
+                        const done = segmentChars.slice(0, typedChars).join('');
+                        const restChars = segmentChars.slice(typedChars);
+                        const current = restChars[0] ?? '';
+                        const rest = restChars.slice(1).join('');
+                        const currentDisplay = current === ' ' ? '␣' : current;
+
                         content = (
                             <>
                                 <span
@@ -172,14 +239,16 @@ export default function TypingRaceLive({
                                     {done}
                                 </span>
                                 <span
+                                    className="inline-block min-w-[0.6em] text-center"
                                     style={{
                                         backgroundColor: `${activeColor}33`,
-                                        boxShadow: `inset 0 -2px 0 ${activeColor}`,
+                                        boxShadow: `inset 0 -3px 0 ${activeColor}`,
+                                        color: activeColor,
                                     }}
                                 >
-                                    {rest.charAt(0)}
+                                    {currentDisplay}
                                 </span>
-                                {rest.slice(1)}
+                                {rest}
                             </>
                         );
                     }
@@ -208,6 +277,7 @@ export default function TypingRaceLive({
                 <StatusBadge
                     canType={canType}
                     practiceMode={practiceMode}
+                    practiceRelayMode={practiceRelayMode}
                     mySlotMeta={mySlotMeta}
                     activeSlotMeta={activeSlotMeta}
                     isFinished={run?.is_finished}

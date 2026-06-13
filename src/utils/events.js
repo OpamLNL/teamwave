@@ -208,10 +208,10 @@ export async function fetchPracticeState(eventId, activityId) {
     return parseAuthJson(res);
 }
 
-export async function startPracticeRun(eventId, activityId) {
+export async function startPracticeRun(eventId, activityId, mode = 'solo') {
     const res = await authFetch(endpoints.events.practiceStart(eventId, activityId), {
         method: 'POST',
-        body: JSON.stringify({}),
+        body: JSON.stringify({ mode }),
     });
     return parseAuthJson(res);
 }

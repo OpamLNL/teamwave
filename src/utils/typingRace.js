@@ -103,6 +103,33 @@ export function getSlotMeta(settings, slot) {
     };
 }
 
+export function splitTextChars(text) {
+    const value = String(text ?? '');
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        return [...new Intl.Segmenter('uk', { granularity: 'grapheme' }).segment(value)]
+            .map((part) => part.segment);
+    }
+    return [...value];
+}
+
+export function getExpectedChar(text, typedIndex) {
+    const chars = splitTextChars(text);
+    const index = Number(typedIndex) || 0;
+    return chars[index] ?? null;
+}
+
+export function formatExpectedChar(char) {
+    if (char == null || char === '') return '—';
+    if (char === ' ') return 'пробіл';
+    if (char === '\n') return '↵';
+    if (char === '\t') return '↹';
+    return char;
+}
+
+export function isLatinSegment(text) {
+    return /[A-Za-z]/.test(String(text ?? ''));
+}
+
 export function getSegmentOwnerSlot(segments, index) {
     const seg = segments?.[index];
     if (seg?.slot != null) return seg.slot;
@@ -110,4 +137,62 @@ export function getSegmentOwnerSlot(segments, index) {
         if (segments[i]?.slot != null) return segments[i].slot;
     }
     return segments?.find((s) => s.slot != null)?.slot ?? 0;
+}
+
+export function getOccupiedSlots(members) {
+    return [...new Set(
+        (members || [])
+            .map((member) => Number(member.slot_index))
+            .filter((slot) => Number.isInteger(slot) && slot >= 0)
+    )].sort((a, b) => a - b);
+}
+
+export function remapSlotForTeam(originalSlot, occupiedSlots) {
+    const slot = Number(originalSlot);
+    if (!occupiedSlots.length) return slot;
+    if (occupiedSlots.includes(slot)) return slot;
+    return occupiedSlots[slot % occupiedSlots.length];
+}
+
+export function adaptTypingSettingsForTeam(settings, members) {
+    const base = normalizeTypingRaceSettings(settings);
+    const occupiedSlots = getOccupiedSlots(members);
+    const configuredSize = Number(base.team_size) || base.slots?.length || 4;
+
+    if (!occupiedSlots.length || occupiedSlots.length >= configuredSize) {
+        return base;
+    }
+
+    const memberBySlot = new Map(
+        (members || []).map((member) => [Number(member.slot_index), member])
+    );
+
+    const adaptedSegments = (base.segments || []).map((segment) => {
+        if (segment.slot == null) {
+            return { ...segment };
+        }
+        return {
+            ...segment,
+            slot: remapSlotForTeam(segment.slot, occupiedSlots),
+        };
+    });
+
+    const adaptedSlots = (base.slots || [])
+        .filter((slot) => occupiedSlots.includes(Number(slot.slot)))
+        .map((slot) => {
+            const member = memberBySlot.get(Number(slot.slot));
+            const playerNumber = occupiedSlots.indexOf(Number(slot.slot)) + 1;
+            return {
+                ...slot,
+                label: member?.name || `Гравець ${playerNumber}`,
+            };
+        });
+
+    return {
+        ...base,
+        team_size: occupiedSlots.length,
+        slots: adaptedSlots,
+        segments: adaptedSegments,
+        occupied_slots: occupiedSlots,
+    };
 }
